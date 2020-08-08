@@ -29,7 +29,7 @@ SUCH DAMAGE.
 local posix = require 'posix'
 
 local data = require'data'
--- local pprint = require 'pprint'
+local pprint = require 'pprint'
 
 local np = {}
 
@@ -217,7 +217,12 @@ local Lstat = data.layout{
   length = num9p(33, 8),
 }
 
-local function getstat(seg)
+function np.getstat(connection, seg)
+  return getstat(seg)
+end
+
+
+function getstat(seg)
   local p = seg:segment():layout(Lstat)
   local st = {}
 
@@ -562,5 +567,6 @@ function np.wstat(conn, fid, st)
   writemsg(conn.connection, seg:segment(0, tx.stsize))
   return readmsg(conn.connection, Rwstat)
 end
+
 
 return np
