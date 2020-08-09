@@ -38,10 +38,11 @@ local OEXEC = 3
 
 local READ_BUF_SIZ = 4096
 
-function readdir(ctx, path) 
-  local f, g = ctx:newfid(), ctx:newfid()  
+function _9p_readdir(ctx, path) 
+  local f = ctx:newfid()
   local offset = 0
   local dir, data = nil, nil
+
   ctx:walk(ctx.rootfid, f, path) 
   ctx:open(f, ORDONLY)  
 
@@ -58,11 +59,24 @@ function readdir(ctx, path)
     end
     dir = dir .. tostring(data)
     offset = offset + #(tostring(data))
-    
-      
   end
 
   print("Read " .. #dir .. " bytes")
+  ctx:clunk(f)
+  return dir
+end
+
+function readdir(ctx, path) 
+  local dir = {}
+  local dirdata = _9p_readdir(ctx, path)
+  while 1 do
+    st = ctx:getstat(data.new(dirdata))   
+    table.insert(dir, st)
+    dirdata = string.sub(dirdata, st.size + 3) 
+    if (#dirdata == 0) then
+      break
+    end
+  end
   return dir
 end
 
@@ -76,17 +90,10 @@ end
 
 local conn = np.attach(tcp, "bebebeko", "")
 
-local f, g = conn:newfid(), conn:newfid()
-
-local dirdata = readdir(conn, "./")
-
-local offset = 0
-while 1 do
-  st = conn:getstat(data.new(dirdata)) 
-  dirdata = string.sub(dirdata, st.size + 3)
-  print(st.name)
-  if (#dirdata == 0) then
-    break
-  end
+for n, file in pairs(readdir(conn, "/tmp")) do
+  print(file.name)
 end
 
+for n, file in pairs(readdir(conn, "/chan")) do
+  print(file.name)
+end
